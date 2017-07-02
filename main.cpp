@@ -3,12 +3,16 @@
 #include "rooms.h"
 #include "individuals.h"
 
+
+/************************** Variables globales *************************************/
 int params[6];
 vector<Entitie> entities;
 vector<Room> rooms;
 vector<Constraint> cons_soft, cons_hard;
 vector<Individual> poblation;
 
+
+/************************** Declaracion de funciones *************************************/
 void leer_instancia(string path);
 bool allocation(Room r, Entitie e, vector<vector<int>> i);
 bool non_allocation(Room r, Entitie e, vector<vector<int>> i);
@@ -29,12 +33,18 @@ vector<vector<int>> mutation(vector<vector<int>> crossover, float pm, vector<vec
 void output(Individual ind, string name);
 
 
+/************************** Implemetacion de OSAP mediante AG ****************************
+Input: vector argv, que cada casilla indica:
+-argv[1]: instancia 
+-argv[2]: tamaño de la poblacion 
+-argv[3]: cantidad de generaciones a crear, es decir, criterio de termino que indica la cantidad de iteraciones
+-argv[4]: probabilidad de cruzamiento
+-argv[5]: probabilidad de mutacion
+****************************************************************************************/
 int main(int argc, char* argv[]) {
   srand (time(NULL));
 	cout << to_string(argc) << endl;
 	cout << argv[0] << " " << argv[1] << endl;
-
-  leer_instancia(argv[1]);
 
   int i, j, seed, generacion, tam_poblacion, cant_gen, tipos, m;
   float f_e, pc, pm;
@@ -46,9 +56,17 @@ int main(int argc, char* argv[]) {
   Individual elite_best, elite_now;
   vector<Individual> select;
   vector<vector<int>> crossover, mutacion;
-  string salida;
+  string salida, instancia;
 
-  for (i = 0; i < rooms.size(); i++)
+
+  instancia = argv[1];
+  tam_poblacion = atoi(argv[2]);
+  cant_gen = atoi(argv[3]);
+  pc = atof(argv[4]);
+  pm = atof(argv[5]);
+
+  leer_instancia(instancia);
+  for (i = 0; (unsigned)i < rooms.size(); i++)
   {
     rooms_space.push_back(rooms[i].get_rspace());
   }
@@ -56,10 +74,10 @@ int main(int argc, char* argv[]) {
   entities_space = entities; //ordena entidades segun espacio requerido, de la entidad que necesita mas a la que necesita menos
   sort(entities_space.begin(), entities_space.end(), [] (Entitie a, Entitie b) { return a.get_space() > b.get_space(); }); 
 
-  for (i = 0; i < entities.size(); i++) //relacionar entidades con sus restricciones 
+  for (i = 0; (unsigned)i < entities.size(); i++) //relacionar entidades con sus restricciones 
   {
     vector<Constraint> cons_of_ent;
-    for (j = 0; j < cons_hard.size(); j++)
+    for (j = 0; (unsigned)j < cons_hard.size(); j++)
     {
       if(cons_hard[j].get_ctype() == 6){  // restriccion non_sharing, entidad sola
         if(cons_hard[j].get_c1() == entities[i].get_eid()){
@@ -75,10 +93,10 @@ int main(int argc, char* argv[]) {
     ezpeciales.push_back(cons_of_ent);
   }
   
-  for (i = 0; i < entities.size(); i++) //relacionar entidades con sus restricciones 
+  for (i = 0; (unsigned)i < entities.size(); i++) //relacionar entidades con sus restricciones 
   {
     vector<Constraint> cons_of_ent;
-    for (j = 0; j < cons_hard.size(); j++)
+    for (j = 0; (unsigned)j < cons_hard.size(); j++)
     {
       if(cons_hard[j].get_ctype() == 4 or cons_hard[j].get_ctype() == 5 or cons_hard[j].get_ctype() == 7 or cons_hard[j].get_ctype() == 8 or cons_hard[j].get_ctype() == 9){
         if(cons_hard[j].get_c1() == entities[i].get_eid() or cons_hard[j].get_c2() == entities[i].get_eid()){
@@ -90,7 +108,7 @@ int main(int argc, char* argv[]) {
   }
   /* 1) Generar población!! */
   i=0;
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < tam_poblacion; i++)
   {
     j = 0;
     seed = (rand() % 1234567);
@@ -108,15 +126,12 @@ int main(int argc, char* argv[]) {
     poblation.push_back(ind);
   }
 
-
-  tam_poblacion = 4;
-  cant_gen = 2;
   for (generacion = 0; generacion < cant_gen; generacion++)
   {
     /* 2) Evaluacion de poblacion*/
     f_e = 0;
     cout << "poblacion: " << endl;
-    for (i = 0; i < poblation.size(); i++)
+    for (i = 0; (unsigned)i < poblation.size(); i++)
     {
       f_e = fun_eval(poblation[i]);
       poblation[i].set_apt(f_e);
@@ -128,7 +143,7 @@ int main(int argc, char* argv[]) {
     /* 3) Paso de elitismo*/
     if(generacion == 0){
       elite_best = elite(poblation);
-      salida = "poblacion_inicial" ; //+ str();
+      salida = instancia + "inicial" ; //Eliminar Inicial
       output(elite_best, salida);
     }
     else{
@@ -136,40 +151,39 @@ int main(int argc, char* argv[]) {
       if(elite_now.get_apt() < elite_best.get_apt()){ //el mejor de la generacion actual es el mejor mejor xd
         elite_best = elite_now;
       }
-      salida = "best_" + to_string(generacion);
+      salida = instancia + "_" + to_string(generacion); //eliminar desde el _
       output(elite_best, salida);
+      elite_best.show();
     }
     cout << "Función de evaluacion del mejor " << elite_best.get_apt() << endl;
 
     /* 4) Selcción por ruleta~*/
     select = ranking(poblation, 4);
     cout << "seleccion de padres " << endl;
-    for (i = 0; i < select.size(); i++)
+    for (i = 0; (unsigned)i < select.size(); i++)
     {
       select[i].show();
     }
 
     poblation.clear();
     tipos = 0;
+    
     while(tipos < tam_poblacion){
-      pc = 0.9;
       /* 5) CrossOver One Point*/
       crossover = cross_one_point(select, pc);
 
-      for (i = 0; i < crossover.size(); i++)
+      for (i = 0; (unsigned)i < crossover.size(); i++)
       {
         cout << "CrossOver " << i << ": ";
-        for (j = 0; j < crossover[i].size(); j++)
+        for (j = 0; (unsigned)j < crossover[i].size(); j++)
         {
           cout << crossover[i][j] << " ";
         }
         cout << endl;
       }
-
-      pm = 0.2;
       /* 6) Mutacion, gen a gen segun pm(probabilidad de mutacion), se revisan 3 tipos de restricciones para que no quede la embarrada con la solucion*/
       mutacion = mutation(crossover, pm, ezpeciales);
-      for (m = 0; m < mutacion.size(); m++)
+      for (m = 0; (unsigned)m < mutacion.size(); m++)
       {     
         Individual prueba;
 
@@ -193,6 +207,12 @@ int main(int argc, char* argv[]) {
  	return 0;
 }
 
+/************************** Almacenamiento de instancia ****************************
+Input: 
+-path: ruta de la instancia
+
+Almacena un vector de objeto para cada componente: entidad, habitacion y restriccion (blandas y duras por separado)
+****************************************************************************************/
 void leer_instancia(string path){  //Se lee la instancia y crea vetor de entidades habitaciones restricciones duras y blandas
   Entitie e;
   vector<int> list_adj; //lista de adyacencia de habitaciones
@@ -284,22 +304,25 @@ void leer_instancia(string path){  //Se lee la instancia y crea vetor de entidad
     cout << "Error al abrir el archivo";
 }             
 
+/************************** Verifica el cumplimiento de la restriccion tipo 0 ****************************************/
 bool allocation(Room r, Entitie e, vector<vector<int>> i){
   if(i[e.get_eid()][r.get_rid()] == 1)
     return true;
   return false;
 }
 
+/************************** Verifica el cumplimiento de la restriccion tipo 1 ****************************************/
 bool non_allocation(Room r, Entitie e, vector<vector<int>> i){
   if(i[e.get_eid()][r.get_rid()] == 0)
     return true;
   return false;
 }
 
+/************************** Verifica el cumplimiento de la restriccion tipo 3 ****************************************/
 bool capacity(Room r, vector<vector<int>> i){
   int j;
   float ocupado = 0;
-  for (j = 0; j < i.size(); j++)
+  for (j = 0; (unsigned)j < i.size(); j++)
   {
     if(i[j][r.get_rid()]){
       ocupado += entities[j].get_space();
@@ -310,6 +333,7 @@ bool capacity(Room r, vector<vector<int>> i){
   return false;
 }
 
+/************************** Verifica el cumplimiento de la restriccion tipo 4 ****************************************/
 bool same_room(Entitie e1, Entitie e2, vector<vector<int>> i){
   int j;
   for (j = 0; j < params[1]; j++)
@@ -320,6 +344,7 @@ bool same_room(Entitie e1, Entitie e2, vector<vector<int>> i){
   return false;
 }
 
+/************************** Verifica el cumplimiento de la restriccion tipo 5 ****************************************/
 bool not_same_room(Entitie e1, Entitie e2, vector<vector<int>> i){
   int j, contador = 0;
   for (j = 0; j < params[1]; j++)
@@ -332,6 +357,7 @@ bool not_same_room(Entitie e1, Entitie e2, vector<vector<int>> i){
   return false;
 }
 
+/************************** Verifica el cumplimiento de la restriccion tipo 6 ****************************************/
 bool not_sharing(Entitie e, vector<vector<int>> i){ 
   int j = 0, k;
   bool  hab_no_encontrada = true;
@@ -343,7 +369,7 @@ bool not_sharing(Entitie e, vector<vector<int>> i){
           return false;
         }
       }
-      for(k = e.get_eid()+1; k < i.size(); k++){
+      for(k = e.get_eid()+1; (unsigned)k < i.size(); k++){
         if(i[k][j] == 1){
           return false;
         }
@@ -356,6 +382,7 @@ bool not_sharing(Entitie e, vector<vector<int>> i){
   return true;
 }
 
+/************************** Verifica el cumplimiento de la restriccion tipo 7 ****************************************/
 bool adjacency(Entitie e1, Entitie e2, vector<vector<int>> i){  //probar se considera misma habitacion??
   int j, hab_e1, hab_e2; 
   vector<int> adj_e1;
@@ -369,7 +396,7 @@ bool adjacency(Entitie e1, Entitie e2, vector<vector<int>> i){  //probar se cons
     }
   }
   adj_e1 = rooms[hab_e1].get_radj();
-  for (j = 0; j < adj_e1.size(); j++)
+  for (j = 0; (unsigned)j < adj_e1.size(); j++)
   {
     if(hab_e2 == adj_e1[j])
       return true;
@@ -377,11 +404,12 @@ bool adjacency(Entitie e1, Entitie e2, vector<vector<int>> i){  //probar se cons
   return false;
 }
 
+/************************** Verifica el cumplimiento de la restriccion tipo 8 ****************************************/
 bool nearby(Entitie e1, Entitie e2, vector<vector<int>> i){ 
   int j;
   int hab_e1 = -1, hab_e2 = -1; 
   vector<int> adj_e1;
-  for (j = 0; j < i[0].size(); j++)
+  for (j = 0; (unsigned)j < i[0].size(); j++)
   {
     if(i[e1.get_eid()][j] == 1){
       hab_e1 = j;
@@ -397,10 +425,11 @@ bool nearby(Entitie e1, Entitie e2, vector<vector<int>> i){
   return false;
 }
 
+/************************** Verifica el cumplimiento de la restriccion tipo 9 ****************************************/
 bool awayfrom(Entitie e1, Entitie e2, vector<vector<int>> i){ 
   int j, hab_e1, hab_e2; 
   vector<int> adj_e1;
-  for (j = 0; j < i[0].size(); j++)
+  for (j = 0; (unsigned)j < i[0].size(); j++)
   {
     if(i[e1.get_eid()][j] == 1){
       hab_e1 = j;
@@ -418,12 +447,13 @@ bool awayfrom(Entitie e1, Entitie e2, vector<vector<int>> i){
   return true;
 }
 
+/************************** Verifica el cumplimiento de la restriccion de cada entidad en solo una habitacion ****************************************/
 bool entitie_one_room(vector<vector<int>> i){
   int j, k, contador;
-  for (j = 0; j < i.size(); j++)
+  for (j = 0; (unsigned)j < i.size(); j++)
   {
     contador = 0;
-    for (k = 0; k < i[j].size(); k++)
+    for (k = 0; (unsigned)k < i[j].size(); k++)
     {
       if(i[j][k] == 1)
         contador++;
@@ -435,6 +465,7 @@ bool entitie_one_room(vector<vector<int>> i){
 }
 
 
+/************************** Verifica la factibilidad de un individuo ****************************************/
 bool feasible(Individual ind){ //probar
   int i, j, k, type;
   vector<vector<int>> individuo;
@@ -442,12 +473,12 @@ bool feasible(Individual ind){ //probar
   k = 0;
 
   individuo.assign(params[0], vector<int> (params[1], 0)); //inicializo matriz con 0
-  for (i = 0; i < rep.size(); i++)
+  for (i = 0; (unsigned)i < rep.size(); i++)
   {
     individuo[i][rep[i]] = 1;
   }
 
-  for (j = 0; j < cons_hard.size(); j++) {
+  for (j = 0; (unsigned)j < cons_hard.size(); j++) {
     type = cons_hard[j].get_ctype();
   //  cons_hard[j].show();
    // cout<<cons_hard.size()<< endl;
@@ -513,12 +544,17 @@ bool feasible(Individual ind){ //probar
       break;
     }
   }
-  if(k == cons_hard.size())
+  if((unsigned)k == cons_hard.size())
     return true;
   return false;
 }
 
-
+/************************** Evalua a un individuo *********************
+Input:
+-ind: individuo a evaluar
+Output:
+Valor flotante que representa la penalizacion del espacio mal utilizado y restricciones violadas por el individuo
+***********************************************************************/
 float fun_eval(Individual ind){
   cout << "funcion de evaluacion en proceso" << endl;
 
@@ -530,10 +566,10 @@ float fun_eval(Individual ind){
   vector<vector<int>> individuo;
   int i, j, type;
   float overused, wasted, penalization_space, penalization_cons_soft, penalization;
-  space_rooms = ind.get_space_rooms();
+  space_rooms = ind.set_space_rooms(rooms, entities);
 
   penalization = penalization_space = 0;
-  for (i = 0; i < space_rooms.size(); i++)
+  for (i = 0; (unsigned)i < space_rooms.size(); i++)
   {
     overused = wasted = 0;
   //  cout << "Para la habitacion " << i << " el espacio que queda " << space_rooms[i] << endl;
@@ -557,13 +593,13 @@ float fun_eval(Individual ind){
   }*/
   //Pasar individuo a matriz
   individuo.assign(params[0], vector<int> (params[1], 0)); //inicializo matriz con 0
-  for (i = 0; i < rep.size(); i++)
+  for (i = 0; (unsigned)i < rep.size(); i++)
   {
     individuo[i][rep[i]] = 1;
   }
 
   penalization_cons_soft = 0;
-  for (j = 0; j < cons_soft.size(); j++)
+  for (j = 0; (unsigned)j < cons_soft.size(); j++)
   {
     type = cons_soft[j].get_ctype();
   //  cons_soft[j].show();
@@ -654,6 +690,7 @@ float fun_eval(Individual ind){
   return penalization;
 }
 
+/************************** Mejor individuo de la poblacion ****************************************/
 Individual elite(vector<Individual> pob){
   Individual best;
 
@@ -664,6 +701,7 @@ Individual elite(vector<Individual> pob){
   return best;
 }
 
+/************************** Seleccion por ranking de los padres ****************************************/
 vector<Individual> ranking(vector<Individual> pob, int cant_padres){
 //  cout << "Hola, adios xd, ahora se seleccionan los padres" << endl;
   int i, r, j;
@@ -672,7 +710,7 @@ vector<Individual> ranking(vector<Individual> pob, int cant_padres){
   vector<Individual> sort_asc, padres;
 
   total = 0.0;
-  for (i = 1; i <= pob.size(); i++) //debe partir de 1 para la suma de 1+2+...+n
+  for (i = 1; (unsigned)i <= pob.size(); i++) //debe partir de 1 para la suma de 1+2+...+n
   {
     total += i;
  //   cout << total << endl;
@@ -683,7 +721,7 @@ vector<Individual> ranking(vector<Individual> pob, int cant_padres){
   sort(sort_asc.begin(), sort_asc.end(), [] (Individual a, Individual b) { return a.get_apt() > b.get_apt(); }); 
 
 
-  for (i = 1; i <= sort_asc.size(); i++) /* el que tiene menor aptitus tiene mayor posibilidad de ganar*/
+  for (i = 1; (unsigned)i <= sort_asc.size(); i++) /* el que tiene menor aptitus tiene mayor posibilidad de ganar*/
   {
  //   sort_asc[i-1].show();
     ruleta.push_back(i/total);
@@ -725,9 +763,10 @@ vector<Individual> ranking(vector<Individual> pob, int cant_padres){
   return padres;
 }
 
+/************************** Cruzamiento en un punto de dos individuos ****************************************/
 vector<vector<int>> cross_one_point(vector<Individual> padres, float pc){
   cout << "hola, adios, cruzamiento 1313" << endl;
-  int i, rand_partition, cant_padres, r, j;
+  int i, rand_partition, r, j;
   float rand_float;
   vector<vector<int>> hijos;
   vector<int> crear_men, father_men_1, father_men_2;
@@ -741,7 +780,7 @@ vector<vector<int>> cross_one_point(vector<Individual> padres, float pc){
 
   srand(time(0));
 
-  for (i = 0; i < padres.size(); i=i+2)
+  for (i = 0; (unsigned)i < padres.size(); i=i+2)
   {
     r = (rand() % 100);
     rand_float = r/100.0;
@@ -758,7 +797,7 @@ vector<vector<int>> cross_one_point(vector<Individual> padres, float pc){
       {
         crear_men.push_back(father_men_1[j]);
       }
-      for (j = rand_partition; j < father_men_2.size(); j++)
+      for (j = rand_partition; (unsigned)j < father_men_2.size(); j++)
       {
         crear_men.push_back(father_men_2[j]);
       }
@@ -777,7 +816,7 @@ vector<vector<int>> cross_one_point(vector<Individual> padres, float pc){
       {
         crear_men.push_back(father_men_2[j]);
       }
-      for (j = rand_partition; j < father_men_1.size(); j++)
+      for (j = rand_partition; (unsigned)j < father_men_1.size(); j++)
       {
         crear_men.push_back(father_men_1[j]);
       }
@@ -811,8 +850,7 @@ vector<vector<int>> cross_one_point(vector<Individual> padres, float pc){
 }
 
 
-
-
+/************************** Genera archivo de salida de un individuo ****************************************/
 void output(Individual ind, string name){
   cout << "aqui 1 2 3 en el output" << endl;
   int i, j, type;
@@ -821,17 +859,25 @@ void output(Individual ind, string name){
   vector<float> rooms_bad_used;
   vector<int> rep = ind.get_ind();
   vector<vector<int>> individuo;
+  
+  for (i = 0; (unsigned)i < rep.size(); i++)
+  {
+    cout << rep[i] << " ";
+  }
+  cout << endl;
+
+  ids_violadas.clear();
 
   ofstream salida;
-  salida.open(name+".txt");
+  salida.open(name+".out");
 
   individuo.assign(params[0], vector<int> (params[1], 0)); //inicializo matriz con 0
-  for (i = 0; i < rep.size(); i++)
+  for (i = 0; (unsigned)i < rep.size(); i++)
   {
     individuo[i][rep[i]] = 1;
   }
 
-  for (i = 0; i < cons_soft.size(); i++)
+  for (i = 0; (unsigned)i < cons_soft.size(); i++)
   {
     type = cons_soft[i].get_ctype();;
     switch(type){
@@ -887,15 +933,24 @@ void output(Individual ind, string name){
     }
   }
   salida << ids_violadas.size() << " ";
-  for (i = 0; i < ids_violadas.size(); i++)
+  for (i = 0; (unsigned)i < ids_violadas.size(); i++)
   {
     salida << ids_violadas[i] << " ";
   }
   salida << endl;
 
+  rooms_bad_used.clear();
   rooms_bad_used = ind.set_space_rooms(rooms, entities);
+
+  cout << "Espacio: "; 
+  for (i = 0; (unsigned)i < rooms_bad_used.size(); i++)
+  {
+    cout << rooms_bad_used[i] << " ";
+  }
+  cout << endl;
+
   overused = wasted = 0;
-  for (i = 0; i < rooms_bad_used.size(); i++)
+  for (i = 0; (unsigned)i < rooms_bad_used.size(); i++)
   {
     if(rooms_bad_used[i] < 0)
       overused += rooms_bad_used[i]*-1;
@@ -905,7 +960,7 @@ void output(Individual ind, string name){
   salida << overused+wasted << " " << wasted << " " << overused << endl;
   salida << endl;
 
-  for (i = 0; i < rooms_bad_used.size(); i++)
+  for (i = 0; (unsigned)i < rooms_bad_used.size(); i++)
   {
     salida << i << " ";
     if(rooms_bad_used[i] > 0)
@@ -915,13 +970,13 @@ void output(Individual ind, string name){
     else
       salida << "0 0 ";
 
-    for (j = 0; j < rep.size(); j++)
+    for (j = 0; (unsigned)j < rep.size(); j++)
     {
       if(rep[j] == i)
         entities_in_room.push_back(j);
     }
     salida << entities_in_room.size() << " ";
-    for (j = 0; j < entities_in_room.size(); j++)
+    for (j = 0; (unsigned)j < entities_in_room.size(); j++)
     {
       salida << entities_in_room[j] << " ";
     }
@@ -936,6 +991,7 @@ void output(Individual ind, string name){
   salida.close();
 }
 
+/************************** Muta a todos los individuos obtenidos del cruzamiento ****************************************/
 vector<vector<int>> mutation(vector<vector<int>> crossover, float pm, vector<vector<Constraint>> ezpeciales){
   cout << "mutacioon" << endl;
   int i, j, k, r, random_room, type, room;
@@ -944,10 +1000,10 @@ vector<vector<int>> mutation(vector<vector<int>> crossover, float pm, vector<vec
   vector<int> rooms_tabu;
   result = crossover;
 
-  for (i = 0; i < result.size(); i++)
+  for (i = 0; (unsigned)i < result.size(); i++)
   {
     cout << "individuo " << i << endl;
-    for (k = 0; k < result[i].size(); k++)
+    for (k = 0; (unsigned)k < result[i].size(); k++)
     {
       cout << "entidad " << k << endl;
       r = (rand() % 100);
@@ -955,7 +1011,7 @@ vector<vector<int>> mutation(vector<vector<int>> crossover, float pm, vector<vec
       if(rand_float < pm) //mutar 
       {
         random_room = (rand() % rooms.size());
-        for (j = 0; j < ezpeciales[k].size(); j++)
+        for (j = 0; (unsigned)j < ezpeciales[k].size(); j++)
         {
           type = ezpeciales[k][j].get_ctype();
           ezpeciales[k][j].show();
@@ -984,7 +1040,7 @@ vector<vector<int>> mutation(vector<vector<int>> crossover, float pm, vector<vec
         result[i][k] = random_room;
       }
       else{
-        for (j = 0; j < ezpeciales[k].size(); j++)
+        for (j = 0; (unsigned)j < ezpeciales[k].size(); j++)
         {
           type = ezpeciales[k][j].get_ctype();
           if (type == 6 and !(find(rooms_tabu.begin(), rooms_tabu.end(), result[i][k]) != rooms_tabu.end())){ // not sharing y la hab actual no esta en tabu ok, agregar a tabu
@@ -1004,9 +1060,9 @@ vector<vector<int>> mutation(vector<vector<int>> crossover, float pm, vector<vec
     rooms_tabu.clear();
   }
 
-  for (i = 0; i < result.size(); i++)
+  for (i = 0; (unsigned)i < result.size(); i++)
   {
-    for (j = 0; j < result[i].size(); j++)
+    for (j = 0; (unsigned)j < result[i].size(); j++)
     {
       cout << result[i][j] << " ";
     }
