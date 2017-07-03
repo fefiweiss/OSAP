@@ -882,49 +882,52 @@ void output(Individual ind, string name){
     type = cons_soft[i].get_ctype();;
     switch(type){
       case 0: //Allocation C1->entidad C2->habitación  
-        if(!(allocation(rooms[cons_soft[j].get_c2()], entities[cons_soft[j].get_c1()], individuo))){
+        if(!(allocation(rooms[cons_soft[i].get_c2()], entities[cons_soft[i].get_c1()], individuo))){
+          cout << "hi 0" << endl;
           ids_violadas.push_back(cons_soft[i].get_cid());
         }
       break;
       case 1: //Non allocation C1->entidad  C2->habitación
-        if(!(non_allocation(rooms[cons_soft[j].get_c2()], entities[cons_soft[j].get_c1()], individuo))){
+        if(!(non_allocation(rooms[cons_soft[i].get_c2()], entities[cons_soft[i].get_c1()], individuo))){
           ids_violadas.push_back(cons_soft[i].get_cid());
         }
       break;
       case 2: //one_of no se usa 
       break;
       case 3: //Capacidad
-        if(!(capacity(rooms[cons_soft[j].get_c1()], individuo))){
+        if(!(capacity(rooms[cons_soft[i].get_c1()], individuo))){
           ids_violadas.push_back(cons_soft[i].get_cid());
         }
       break; 
       case 4: //Same room
-        if(!(same_room(entities[cons_soft[j].get_c1()], entities[cons_soft[j].get_c2()], individuo))){
+        if(!(same_room(entities[cons_soft[i].get_c1()], entities[cons_soft[i].get_c2()], individuo))){
+          cout << "hi 4" << endl;
           ids_violadas.push_back(cons_soft[i].get_cid());
         }
       break;
       case 5: //Not same room 
-        if(!(not_same_room(entities[cons_soft[j].get_c1()], entities[cons_soft[j].get_c2()], individuo))){
+        if(!(not_same_room(entities[cons_soft[i].get_c1()], entities[cons_soft[i].get_c2()], individuo))){
           ids_violadas.push_back(cons_soft[i].get_cid());
         }
       break;
       case 6:  //Not sharing
-        if(!(not_sharing(entities[cons_soft[j].get_c1()], individuo))){
+        if(!(not_sharing(entities[cons_soft[i].get_c1()], individuo))){
           ids_violadas.push_back(cons_soft[i].get_cid());
         }
       break;
       case 7:  //Adjacency
-        if(!(adjacency(entities[cons_soft[j].get_c1()], entities[cons_soft[j].get_c2()], individuo))){
+        if(!(adjacency(entities[cons_soft[i].get_c1()], entities[cons_soft[i].get_c2()], individuo))){
           ids_violadas.push_back(cons_soft[i].get_cid());
         }
       break;
       case 8:  //Nearby  (same floor)
-        if(!(nearby(entities[cons_soft[j].get_c1()], entities[cons_soft[j].get_c2()], individuo))){
+        if(!(nearby(entities[cons_soft[i].get_c1()], entities[cons_soft[i].get_c2()], individuo))){
           ids_violadas.push_back(cons_soft[i].get_cid());
         }
       break;
       case 9:  //AwayFrom  (not same floor)
-        if(!(awayfrom(entities[cons_soft[j].get_c1()], entities[cons_soft[j].get_c2()], individuo))){
+        if(!(awayfrom(entities[cons_soft[i].get_c1()], entities[cons_soft[i].get_c2()], individuo))){
+          cout << "hi 9" << endl;
           ids_violadas.push_back(cons_soft[i].get_cid());
         }
       break;
